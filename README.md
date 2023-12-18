@@ -236,7 +236,6 @@ DATABASES = {
    'default': {
        'ATOMIC_REQUESTS': True,
        'ENGINE': 'awx.main.db.profiled_pg',
-       # highlight-next-line
        'NAME': 'awx',
        'USER': 'awx',
        'PASSWORD': """redhat00""",
@@ -247,8 +246,15 @@ DATABASES = {
        },
    }
 }
-
 ```
+
+The lines to be customized are the following ones:
+
+* NAME
+* USER
+* PASSWORD
+* HOST
+* PORT
 
 ### 5.2. Private Automation Hub configuration
 
