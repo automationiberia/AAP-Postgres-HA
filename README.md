@@ -57,10 +57,12 @@ The easiest way to copy the keys is to execute the following steps between all t
    2. Copy the contents of the previous command
 2. In server B: Paste the contents copied from the previous command, to the end of the `~/.ssh/authorized_keys` file.
 
-:::NOTE
-If any of the above paths needs to be manually created, it's important to remember that it's ownership and access permissions are critical for the SSH keys to work properly, so ensure that the following commands are executed afterwards: 
-
-:::
+> [!NOTE]
+> If any of the above paths needs to be manually created, it's important to remember that it's ownership and access permissions are critical for the SSH keys to work properly, so ensure that the following commands are executed afterwards: 
+> ```console
+> mkdir ~/.ssh && chown ${USER}: ~/.ssh && chmod 0700 ~/.ssh
+> touch ~/.ssh/authorized_keys && chown ${USER}: ~/.ssh/authorized_keys && chmod 0600 ~/.ssh/authorized_keys
+> ```
 
 ### x.x Configure Selinux
 
