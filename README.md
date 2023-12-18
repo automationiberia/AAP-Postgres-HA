@@ -2,7 +2,7 @@
 
 ## 1. Install AAP normally
 
-Install AAP following any of the official installation paths. They are all available at the section `Installation and Upgrade` in https://access.redhat.com/documentation/en-us/red_hat_ansible_automation_platform/2.4
+Install AAP following any of the official installation paths. They are all available at the section `Installation and Upgrade` in <https://access.redhat.com/documentation/en-us/red_hat_ansible_automation_platform/2.4>
 
 ## 2. Deploy extra DB nodes
 
@@ -12,6 +12,7 @@ If cloning is not the selected method, the following considerations must be take
 
 * AAP 2.4 requires all the implied nodes to be RHEL 8.5+.
 * The default version for PostgreSQL in RHEL 8 is 10.23, but 12+ is required by AAP. The recommendation is to install the same version that is deployed byt the AAP installer, so the following steps must be executed before installing PostgreSQL:
+
   ```console
   dnf module switch-to postgresql:13
   dnf install postgresql-server-13.11 postgresql-contrib-13.11
@@ -20,8 +21,8 @@ If cloning is not the selected method, the following considerations must be take
 Once the initial installation is completed, the firewall must be configured to let the DB be reachable from the other nodes:
 
 ```console
-$ firewall-cmd --add-service postgres --permanent
-$ firewall-cmd --add-service postgres
+firewall-cmd --add-service postgres --permanent
+firewall-cmd --add-service postgres
 ```
 
 ## 3. Configure DB replicas with `repmgr`
@@ -66,9 +67,9 @@ The easiest way to copy the keys is to execute the following steps between all t
 > touch ~/.ssh/authorized_keys && chown ${USER}: ~/.ssh/authorized_keys && chmod 0600 ~/.ssh/authorized_keys
 > ```
 
-## 4. Deploy HAProxy nodes
+## 4. Deploy `HAProxy` nodes
 
-At each HAProxy server, the configuration file `/etc/haproxy/haproxy.cfg` is fullfilled with the following contents:
+At each `HAProxy` server, the configuration file `/etc/haproxy/haproxy.cfg` is fullfilled with the following contents:
 
 ```cfg file
 global
@@ -108,22 +109,22 @@ backend pg_cluster
 After modifying the configuration file, the service must be restarted with the command `systemctl restart haproxy`.
 
 > [!TIP]
-> If Selinux is enabled, it should be configured to allow HAProxy to bind to any needed port
+> If Selinux is enabled, it should be configured to allow `HAProxy` to bind to any needed port
 >
 > ```console
 > setsebool -P haproxy_connect_any=1
 > ```
 
-### 4.1 HAProxy with Keepalived
+### 4.1 `HAProxy` with `Keepalived`
 
 > [!TIP]:
-> To let Keepalived to use Direct Routing, the following command should be executed to every HAProxy server to configure the firewall accordingly:
+> To let `Keepalived` to use Direct Routing, the following command should be executed to every `HAProxy` server to configure the firewall accordingly:
 >
 > ```console
 > firewall-cmd --add-rich-rule='rule protocol value="vrrp" accept' --permanent
 > ```
 
-Keepalived at primary HAProxy server:
+`Keepalived` at primary `HAProxy` server:
 
 ```cfg file
 global_defs {
@@ -168,7 +169,7 @@ virtual_server 192.168.122.100 5433 {
 }
 ```
 
-Keepalived at standby HAProxy server:
+`Keepalived` at standby `HAProxy` server:
 
 ```cfg file
 global_defs {
@@ -213,5 +214,42 @@ virtual_server 192.168.122.100 5433 {
 }
 ```
 
-## 5. Configure AAP to use the HAProxy endpoint
+> [!TIP]
+> If Selinux is enabled, it should be configured to allow `Keepalived` to bind to any needed port
+>
+> ```console
+> setsebool -P keepalived_connect_any=1
+> ```
+
+## 5. Configure AAP to use the `Keepalived` endpoint
+
+All the components of the Ansible Automation Platform must be configured to use the `Keepalived` endpoint, which will help using one of the two `HAProxies` when the other one is not available. Each `HAProxies` ensures to send the SQL statements to the correct PostgreSQL database instance.
+
+### 5.1. Controller configuration
+
+The configuration file for the Ansible Automation Controller, is located at `/etc/tower/conf.d/postgres.py`, and the contents to be accomodated are the following ones:
+
+```python
+# Ansible Automation Platform controller database settings.
+
+DATABASES = {
+   'default': {
+       'ATOMIC_REQUESTS': True,
+       'ENGINE': 'awx.main.db.profiled_pg',
+       // highlight-next-line
+       'NAME': 'awx',
+       'USER': 'awx',
+       'PASSWORD': """redhat00""",
+       'HOST': '192.168.122.100',
+       'PORT': '5433',
+       'OPTIONS': { 'sslmode': 'prefer',
+                    'sslrootcert': '/etc/pki/tls/certs/ca-bundle.crt',
+       },
+   }
+}
+
+```
+
+### 5.2. Private Automation Hub configuration
+
 ## 6. Test failover and recovery
