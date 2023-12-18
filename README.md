@@ -236,7 +236,7 @@ DATABASES = {
    'default': {
        'ATOMIC_REQUESTS': True,
        'ENGINE': 'awx.main.db.profiled_pg',
-       // highlight-next-line
+       # highlight-next-line
        'NAME': 'awx',
        'USER': 'awx',
        'PASSWORD': """redhat00""",
