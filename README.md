@@ -114,5 +114,104 @@ After modifying the configuration file, the service must be restarted with the c
 > setsebool -P haproxy_connect_any=1
 > ```
 
+### 4.1 HAProxy with Keepalived
+
+> [!TIP]:
+> To let Keepalived to use Direct Routing, the following command should be executed to every HAProxy server to configure the firewall accordingly:
+>
+> ```console
+> firewall-cmd --add-rich-rule='rule protocol value="vrrp" accept' --permanent
+> ```
+
+Keepalived at primary HAProxy server:
+
+```cfg file
+global_defs {
+}
+
+vrrp_instance RH_1 {
+    state MASTER
+    interface enp1s0
+    virtual_router_id 50
+    priority 100
+    advert_int 1
+    authentication {
+        auth_type PASS
+        auth_pass passw123
+    }
+    virtual_ipaddress {
+        192.168.122.100
+    }
+}
+
+virtual_server 192.168.122.100 5433 {
+    delay_loop 10
+    lb_algo rr
+    lb_kind DR
+    persistence_timeout 9600
+    protocol TCP
+
+    real_server 192.168.122.48 5433 {
+        weight 1
+        TCP_CHECK {
+          connect_timeout 10
+          connect_port    5433
+        }
+    }
+    real_server 192.168.122.139 5433 {
+        weight 1
+        TCP_CHECK {
+          connect_timeout 10
+          connect_port    5433
+        }
+    }
+}
+```
+
+Keepalived at standby HAProxy server:
+
+```cfg file
+global_defs {
+}
+
+vrrp_instance RH_1 {
+    state BACKUP
+    interface enp1s0
+    virtual_router_id 50
+    priority 99
+    advert_int 1
+    authentication {
+        auth_type PASS
+        auth_pass passw123
+    }
+    virtual_ipaddress {
+        192.168.122.100
+    }
+}
+
+virtual_server 192.168.122.100 5433 {
+    delay_loop 10
+    lb_algo rr
+    lb_kind DR
+    persistence_timeout 9600
+    protocol TCP
+
+    real_server 192.168.122.48 5433 {
+        weight 1
+        TCP_CHECK {
+          connect_timeout 10
+          connect_port    5433
+        }
+    }
+    real_server 192.168.122.139 5433 {
+        weight 1
+        TCP_CHECK {
+          connect_timeout 10
+          connect_port    5433
+        }
+    }
+}
+```
+
 ## 5. Configure AAP to use the HAProxy endpoint
 ## 6. Test failover and recovery
