@@ -30,16 +30,16 @@ firewall-cmd --add-service postgresql
 The first step is to download the latest version of `repmgr`, and manually install the RPMs, avoiding its dependencies, as these RPMs wants to install it's own version of PostgreSQL:
 
 ```console
-$ URLS=(
+URLS=(
     https://download.postgresql.org/pub/repos/yum/13/redhat/rhel-8-x86_64/repmgr_13-5.4.1-1PGDG.rhel8.x86_64.rpm 
     https://download.postgresql.org/pub/repos/yum/13/redhat/rhel-8-x86_64/repmgr_13-devel-5.4.1-1PGDG.rhel8.x86_64.rpm
     https://download.postgresql.org/pub/repos/yum/13/redhat/rhel-8-x86_64/repmgr_13-llvmjit-5.4.1-1PGDG.rhel8.x86_64.rpm
 )
-$ type wget || dnf install -y wget
-$ for url in ${URLS[@]}; do
+type wget || dnf install -y wget
+for url in ${URLS[@]}; do
     wget "${url}"
 done
-$ rpm -ivh --nodeps "repmgr_13-*"
+rpm -ivh --nodeps "repmgr_13-*"
 ```
 
 If these RPM packages are installed by the normal way, a custom version of the PostgreSQL packages is already installed. This is not the desired scenario, as the AAP installation is using the PostgreSQL packages provided by Red Hat instead. Because of this differences in the PostgreSQL installation process, the following steps must be done to let the PostgreSQL server provided by Red Hat to work properly along with the `repmgr` packages that have been recently installed:
