@@ -342,7 +342,6 @@ DETAIL: PQping() returned "PQPING_NO_RESPONSE"
 NOTICE: starting server using "sudo systemctl start postgresql"
 NOTICE: NODE REJOIN successful
 DETAIL: node 1 is now attached to node 2
-[postgres@aap-ha-db-1 ~]$ 
 
 $ logout
 ```
@@ -404,47 +403,80 @@ $ logout
 
 ## 4. Deploy `HAProxy` nodes
 
+Install the `haproxy` package at every HAProxy server. Run the following commands as `root` user:
+
+```console
+dnf install -y haproxy
+```
+
 At each `HAProxy` server, the configuration file `/etc/haproxy/haproxy.cfg` is fullfilled with the following contents:
 
-```cfg file
+```console
+cp /etc/haproxy/haproxy.cfg{,.orig}
+cat > /etc/haproxy/haproxy.cfg <<EOF
 global
-  log /dev/log local0
-  log /dev/log local1 notice
-  chroot /var/lib/haproxy
-  user haproxy
-  group haproxy
-  daemon
+    log /dev/log local0
+    log /dev/log local1 notice
+    chroot /var/lib/haproxy
+    user haproxy
+    group haproxy
+    daemon
 
 defaults
-  log global
-  mode tcp
-  option tcplog
-  option log-health-checks
-  option tcp-check
-  timeout connect 10s
-  timeout client 30s
-  timeout server 30s
+    log global
+    mode tcp
+    option tcplog
+    option log-health-checks
+    option tcp-check
+    timeout connect 10s
+    timeout client 30s
+    timeout server 30s
 
 frontend pg_frontend
-  bind *:5433
-  mode tcp
-  default_backend pg_cluster
+    bind *:5433
+    mode tcp
+    default_backend pg_cluster
 
 backend pg_cluster
-  mode tcp
-  #stick-table type integer size 1 expire 1d
-  stick-table type integer size 1 expire 2m
-  stick on int(1)
-  option pgsql-check user repmgr
-  server aap-ha-db-1 192.168.122.88:5432 check port 5432 inter 2s downinter 5s rise 2 fall 3 on-marked-down shutdown-sessions
-  server aap-ha-db-2 192.168.122.47:5432 check port 5432 inter 2s downinter 5s rise 2 fall 3 backup on-marked-down shutdown-sessions
-  # Add more replica servers as needed
+    mode tcp
+    stick-table type integer size 1 expire 1d
+    stick on int(1)
+    option pgsql-check user repmgr
+    server aap-ha-db-1 192.168.122.88:5432 check port 5432 inter 2s downinter 5s rise 2 fall 3 on-marked-down shutdown-sessions 
+    server aap-ha-db-2 192.168.122.47:5432 check port 5432 inter 2s downinter 5s rise 2 fall 3 backup on-marked-down shutdown-sessions
+    # Add more replica servers as needed
+
+listen stats
+    bind            *:1936
+    mode            http
+    log             global
+
+    maxconn 10
+
+    timeout client  100s
+    timeout server  100s
+    timeout connect 100s
+    timeout queue   100s
+
+    stats enable
+    stats hide-version
+    stats refresh 30s
+    stats show-node
+    stats auth admin:password
+    stats uri  /haproxy?stats
+EOF
 ```
 
 > [!tip]
 > Replace the IP addresses in the previous command for the IPs of the database servers. Add more lines if more replicas are to be configured.
 
-After modifying the configuration file, the service must be restarted with the command `systemctl restart haproxy`.
+After modifying the configuration file, the service must be restarted and the firewall configured to allow the incomming connections:
+
+```console
+systemctl restart haproxy
+firewall-cmd --add-port 1936/tcp --add-port 5433/tcp
+firewall-cmd --add-port 1936/tcp --add-port 5433/tcp --permanent
+```
 
 > [!TIP]
 > If Selinux is enabled, it should be configured to allow `HAProxy` to bind to any needed port
@@ -452,6 +484,8 @@ After modifying the configuration file, the service must be restarted with the c
 > ```console
 > setsebool -P haproxy_connect_any=1
 > ```
+
+The HAProxy service can be checked by accessing to its stats webpage at <http://aap-ha-hk-1.bcnconsulting.com:1936/haproxy?stats>. Login information will be required (see the configuration file).
 
 ### 4.1 `HAProxy` with `Keepalived`
 
