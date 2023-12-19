@@ -35,10 +35,13 @@ URLS=(
     https://download.postgresql.org/pub/repos/yum/13/redhat/rhel-8-x86_64/repmgr_13-devel-5.4.1-1PGDG.rhel8.x86_64.rpm
     https://download.postgresql.org/pub/repos/yum/13/redhat/rhel-8-x86_64/repmgr_13-llvmjit-5.4.1-1PGDG.rhel8.x86_64.rpm
 )
+
 type wget || dnf install -y wget
+
 for url in ${URLS[@]}; do
     wget "${url}"
 done
+
 rpm -ivh --nodeps "repmgr_13-*"
 ```
 
@@ -79,6 +82,7 @@ The easiest way to copy the keys is to execute the following steps between all t
 >
 > ```console
 > mkdir ~/.ssh && chown ${USER}: ~/.ssh && chmod 0700 ~/.ssh
+>
 > touch ~/.ssh/authorized_keys && chown ${USER}: ~/.ssh/authorized_keys && chmod 0600 ~/.ssh/authorized_keys
 > ```
 
@@ -86,8 +90,11 @@ Let's configure the database to be able to run the `repmgr` plugin. Run the foll
 
 ```console
 su - postgres
+
 sed -i "s,^#include_dir = 'conf.d',include_dir = 'conf.d'," data/postgresql.conf
+
 mkdir data/conf.d
+
 cat > data/conf.d/repmgr.conf <<EOF
 shared_preload_libraries = 'repmgr'
 max_wal_senders = 10
