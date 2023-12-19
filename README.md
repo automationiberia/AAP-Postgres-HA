@@ -86,11 +86,8 @@ Let's configure the database to be able to run the `repmgr` plugin. Run the foll
 
 ```console
 su - postgres
-
 sed -i "s,^#include_dir = 'conf.d',include_dir = 'conf.d'," data/postgresql.conf
-
 mkdir data/conf.d
-
 cat > data/conf.d/repmgr.conf <<EOF
 shared_preload_libraries = 'repmgr'
 max_wal_senders = 10
