@@ -86,7 +86,7 @@ The easiest way to copy the keys is to execute the following steps between all t
 > touch ~/.ssh/authorized_keys && chown ${USER}: ~/.ssh/authorized_keys && chmod 0600 ~/.ssh/authorized_keys
 > ```
 
-Let's configure the database to be able to run the `repmgr` plugin. Run the following commands at the database server installed by the AAP installer (this will be the initial `primary` database replica):
+Let's configure the database to be able to run the `repmgr` plugin. **Run the following commands at the database server installed by the AAP installer** (this will be the initial `primary` database replica):
 
 ```console
 su - postgres
@@ -103,6 +103,35 @@ wal_level = 'logical'
 hot_standby = on
 archive_mode = on
 archive_command = '/bin/true'
+EOF
+```
+
+Now, let's configure the `repmgr` tool at all of the database servers that will be replicas for the database installed by the AAP installer. **Run the following commands at all of the database servers**:
+
+```console
+cp /etc/repmgr/13/repmgr.conf{,.orig}
+
+cat > /etc/repmgr/13/repmgr.conf <<EOF
+node_id=1                                                                                   # A unique integer greater than zero
+node_name='aap-ha-db-1'                                                                     # An arbitrary (but unique) string; we recommend
+conninfo='postgresql://repmgr:repmgr@aap-ha-db-1/repmgr'                                    # Database connection information as a conninfo string.
+data_directory='/var/lib/pgsql/data'                                                        # The node's data directory. This is needed by repmgr
+log_file='/var/log/repmgr.log'                                                              # STDERR can be redirected to an arbitrary file
+pg_bindir='/usr/bin/'                                                                       # Path to PostgreSQL binary directory (location
+ssh_options='-l postgres -q -o ConnectTimeout=10'                                           # Options to append to "ssh"
+failover='automatic'                                                                        # one of 'automatic', 'manual'.
+connection_check_type=connection                                                            # How to check availability of the upstream node; valid options:
+reconnect_attempts=6                                                                        # Number of attempts which will be made to reconnect to an unreachable
+reconnect_interval=10                                                                       # Interval between attempts to reconnect to an unreachable
+promote_command='repmgr standby promote -f /etc/repmgr/13/repmgr.conf'                      # command repmgrd executes when promoting a new primary; use something like:
+follow_command='repmgr standby follow -f /etc/repmgr/13/repmgr.conf -upstream-node-id=%n'   # command repmgrd executes when instructing a standby to follow a new primary;
+primary_notification_timeout=10                                                             # Interval (in seconds) which repmgrd on a standby
+service_start_command = 'sudo systemctl start postgresql'
+service_stop_command = 'sudo systemctl stop postgresql'
+service_restart_command = 'sudo systemctl restart postgresql'
+service_reload_command = 'sudo systemctl reload postgresql'
+repmgrd_service_start_command = 'sudo systemctl start repmgr-13'
+repmgrd_service_stop_command = 'sudo systemctl stop repmgr-13'
 EOF
 ```
 
