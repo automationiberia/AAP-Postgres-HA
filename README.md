@@ -161,8 +161,8 @@ su - postgres
 cat >> data/pg_hba.conf <<EOF
 local   repmgr           repmgr                             trust
 host    repmgr           repmgr        127.0.0.1/32         trust
-host    repmgr           repmgr        xxx.xxx.xxx.xxx/32   trust
-host    repmgr           repmgr        xxx.xxx.xxx.xxx/32   trust
+host    repmgr           repmgr        192.168.122.47/32    trust
+host    repmgr           repmgr        192.168.122.88/32    trust
 EOF
 
 logout
@@ -171,7 +171,7 @@ systemctl restart postgresql
 ```
 
 > [!tip]
-> Replace the `xxx.xxx.xxx.xxx` IP address in the previous command for the IPs of the database servers. Add more lines if more replicas are to be configured.
+> Replace the IP addresses in the previous command for the IPs of the database servers. Add more lines if more replicas are to be configured.
 
 The `postgres` user must have permissions to run some commands using sudo and without any password, for the switchover operations to work as expected. **Run the following commands at all of the database servers**:
 
@@ -246,6 +246,9 @@ backend pg_cluster
   # Add more replica servers as needed
 ```
 
+> [!tip]
+> Replace the IP addresses in the previous command for the IPs of the database servers. Add more lines if more replicas are to be configured.
+
 After modifying the configuration file, the service must be restarted with the command `systemctl restart haproxy`.
 
 > [!TIP]
@@ -309,6 +312,9 @@ virtual_server 192.168.122.100 5433 {
 }
 ```
 
+> [!tip]
+> Replace the IP addresses in the previous command for the IPs of the database servers. Add more lines if more replicas are to be configured.
+
 `Keepalived` at standby `HAProxy` server:
 
 ```cfg file
@@ -355,6 +361,8 @@ virtual_server 192.168.122.100 5433 {
 ```
 
 > [!TIP]
+> Replace the IP addresses in the previous command for the IPs of the database servers. Add more lines if more replicas are to be configured.
+>
 > If Selinux is enabled, it should be configured to allow `Keepalived` to bind to any needed port
 >
 > ```console
@@ -394,6 +402,9 @@ DATABASES = {
 }
 ```
 
+> [!tip]
+> Replace the IP addresses in the previous command for the IPs of the database servers. Add more lines if more replicas are to be configured.
+
 The lines to be customized are the following ones:
 
 * USER
@@ -427,6 +438,9 @@ DATABASES = {'default': {'HOST': '192.168.122.48', 'ENGINE': 'django.db.backends
 DB_ENCRYPTION_KEY = '/etc/pulp/certs/database_fields.symmetric.key'
 DEPLOY_ROOT = '/var/lib/pulp'
 ```
+
+> [!tip]
+> Replace the IP addresses in the previous command for the IPs of the database servers. Add more lines if more replicas are to be configured.
 
 The line to be modified is the `DATABASES` one, and the fields to be customized are `HOST`, `USER`, `PASSWORD` and `PORT`.
 
