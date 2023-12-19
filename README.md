@@ -177,7 +177,7 @@ logout
 systemctl restart postgresql
 ```
 
-Enable and start the `repmgr-13` service to control the replicas:
+Enable and start the `repmgr-13` service to control the replicas. **Run the following commands at all of the database servers, as `root` user**:
 
 ```console
 systemctl enable --now repmgr-13
@@ -254,7 +254,7 @@ $ repmgr -f /etc/repmgr/13/repmgr.conf cluster show
  2  | aap-ha-db-2 | standby |   running | aap-ha-db-1 | default  | 100      | 1        | postgresql://repmgr:repmgr@aap-ha-db-2/repmgr
 ```
 
-Lets test the failover functionality. Stop the primary server (run the following commands at the primary database server):
+Let's test the failover functionality. Stop the primary server (run the following commands at the primary database server):
 
 ```console
 $ su - postgres
@@ -283,7 +283,91 @@ And look at the cluster status after 50s:
 ```console
 $ su - postgres
 
+$ repmgr -f /etc/repmgr/13/repmgr.conf cluster show
+ ID | Name        | Role    | Status    | Upstream | Location | Priority | Timeline | Connection string                            
+----+-------------+---------+-----------+----------+----------+----------+----------+-----------------------------------------------
+ 1  | aap-ha-db-1 | primary | - failed  | ?        | default  | 100      |          | postgresql://repmgr:repmgr@aap-ha-db-1/repmgr
+ 2  | aap-ha-db-2 | primary | * running |          | default  | 100      | 2        | postgresql://repmgr:repmgr@aap-ha-db-2/repmgr
 
+WARNING: following issues were detected
+  - unable to connect to node "aap-ha-db-1" (ID: 1)
+
+HINT: execute with --verbose option to see connection error messages
+
+$ logout
+```
+
+Now, let's the primary server to be the primary server again (run the following commands at the primary database server):
+
+```console
+$ su - postgres
+
+$ repmgr -f /etc/repmgr/13/repmgr.conf -d 'postgresql://repmgr:repmgr@aap-ha-db-2.bcnconsulting.com/repmgr' node rejoin
+NOTICE: rejoin target is node "aap-ha-db-2" (ID: 2)
+INFO: local node 1 can attach to rejoin target node 2
+DETAIL: local node's recovery point: 0/D000028; rejoin target node's fork point: 0/D0000A0
+NOTICE: setting node 1's upstream to node 2
+WARNING: unable to ping "postgresql://repmgr:repmgr@aap-ha-db-1/repmgr"
+DETAIL: PQping() returned "PQPING_NO_RESPONSE"
+NOTICE: starting server using "sudo systemctl start postgresql"
+NOTICE: NODE REJOIN successful
+DETAIL: node 1 is now attached to node 2
+[postgres@aap-ha-db-1 ~]$ 
+
+$ logout
+```
+
+And check that the primary node is now an standby one (run the following commands at the primary database server):
+
+```console
+$ su - postgres
+
+$ repmgr -f /etc/repmgr/13/repmgr.conf cluster show
+ ID | Name        | Role    | Status    | Upstream    | Location | Priority | Timeline | Connection string                            
+----+-------------+---------+-----------+-------------+----------+----------+----------+-----------------------------------------------
+ 1  | aap-ha-db-1 | standby |   running | aap-ha-db-2 | default  | 100      | 1        | postgresql://repmgr:repmgr@aap-ha-db-1/repmgr
+ 2  | aap-ha-db-2 | primary | * running |             | default  | 100      | 2        | postgresql://repmgr:repmgr@aap-ha-db-2/repmgr
+
+$ logout
+```
+
+So, let's the primary node, to be primary again (run the following commands at the primary database server):
+
+```console
+$ su - postgres
+
+$ repmgr -f /etc/repmgr/13/repmgr.conf standby switchover
+NOTICE: executing switchover on node "aap-ha-db-1" (ID: 1)
+NOTICE: attempting to pause repmgrd on 2 nodes
+NOTICE: local node "aap-ha-db-1" (ID: 1) will be promoted to primary; current primary "aap-ha-db-2" (ID: 2) will be demoted to standby
+NOTICE: stopping current primary node "aap-ha-db-2" (ID: 2)
+NOTICE: issuing CHECKPOINT on node "aap-ha-db-2" (ID: 2) 
+DETAIL: executing server command "sudo systemctl stop postgresql"
+INFO: checking for primary shutdown; 1 of 60 attempts ("shutdown_check_timeout")
+NOTICE: current primary has been cleanly shut down at location 0/E000028
+NOTICE: promoting standby to primary
+DETAIL: promoting server "aap-ha-db-1" (ID: 1) using pg_promote()
+NOTICE: waiting up to 60 seconds (parameter "promote_check_timeout") for promotion to complete
+NOTICE: STANDBY PROMOTE successful
+DETAIL: server "aap-ha-db-1" (ID: 1) was successfully promoted to primary
+NOTICE: node "aap-ha-db-1" (ID: 1) promoted to primary, node "aap-ha-db-2" (ID: 2) demoted to standby
+NOTICE: switchover was successful
+DETAIL: node "aap-ha-db-1" is now primary and node "aap-ha-db-2" is attached as standby
+NOTICE: STANDBY SWITCHOVER has completed successfully
+
+$ logout
+```
+
+And check again that the primary node is the primary again (run the following commands at the primary database server):
+
+```console
+$ su - postgres
+
+$ repmgr -f /etc/repmgr/13/repmgr.conf cluster show
+ ID | Name        | Role    | Status    | Upstream    | Location | Priority | Timeline | Connection string                            
+----+-------------+---------+-----------+-------------+----------+----------+----------+-----------------------------------------------
+ 1  | aap-ha-db-1 | primary | * running |             | default  | 100      | 3        | postgresql://repmgr:repmgr@aap-ha-db-1/repmgr
+ 2  | aap-ha-db-2 | standby |   running | aap-ha-db-1 | default  | 100      | 2        | postgresql://repmgr:repmgr@aap-ha-db-2/repmgr
 
 $ logout
 ```
