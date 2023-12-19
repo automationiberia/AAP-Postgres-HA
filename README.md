@@ -21,8 +21,8 @@ If cloning is not the selected method, the following considerations must be take
 Once the initial installation is completed, the firewall must be configured to let the DB be reachable from the other nodes:
 
 ```console
-firewall-cmd --add-services postgres --permanent
-firewall-cmd --add-services postgres
+firewall-cmd --add-service postgresql --permanent
+firewall-cmd --add-service postgresql
 ```
 
 ## 3. Configure DB replicas with `repmgr`
