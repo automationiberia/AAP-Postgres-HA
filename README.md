@@ -42,6 +42,21 @@ done
 $ rpm -ivh --nodeps "repmgr_13-*"
 ```
 
+If these RPM packages are installed by the normal way, a custom version of the PostgreSQL packages is already installed. This is not the desired scenario, as the AAP installation is using the PostgreSQL packages provided by Red Hat instead. Because of this differences in the PostgreSQL installation process, the following steps must be done to let the PostgreSQL server provided by Red Hat to work properly along with the `repmgr` packages that have been recently installed:
+
+```console
+cd /usr/bin/
+ln -sf /usr/pgsql-13/bin/repmgr .
+ln -sf /usr/pgsql-13/bin/repmgrd .
+
+cd /usr/lib64/pgsql
+ln -sf /usr/pgsql-13/lib/repmgr.so .
+ln -sf /usr/pgsql-13/lib/bitcode/ .
+
+cd /usr/share/pgsql/extension
+find /usr/pgsql-13/share/extension/ -type f | while read file; do ln -sf ${file} .; done
+```
+
 The user `postgres` must have the SSH configured to connect to every database node without the need to enter a password, so the switchover operations can run from any node.
 
 > [!NOTE]
