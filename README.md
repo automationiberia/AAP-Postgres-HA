@@ -203,7 +203,7 @@ chmod 0440 /etc/sudoers.d/95-postgres
 visudo -c
 ```
 
-Register the primary server:
+Register the primary server. **Run the following commands at the primary database server**:
 
 ```console
 $ su - postgres
