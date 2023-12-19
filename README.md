@@ -15,7 +15,7 @@ If cloning is not the selected method, the following considerations must be take
 
   ```console
   dnf module switch-to postgresql:13
-  dnf install postgresql-server-13.11 postgresql-contrib-13.11
+  dnf install postgresql-server-13.13 postgresql-contrib-13.13
   ```
 
 Once the initial installation is completed, the firewall must be configured to let the DB be reachable from the other nodes:
