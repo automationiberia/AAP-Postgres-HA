@@ -190,6 +190,23 @@ chmod 0440 /etc/sudoers.d/95-postgres
 visudo -c
 ```
 
+Register the primary server:
+
+```console
+su - postgres
+
+repmgr -f /etc/repmgr/13/repmgr.conf primary register
+```
+
+It should be registered successfully. It can be checked with the following command:
+
+```console
+$ repmgr -f /etc/repmgr/13/repmgr.conf cluster show
+ ID | Name        | Role    | Status    | Upstream | Location | Priority | Timeline | Connection string                            
+----+-------------+---------+-----------+----------+----------+----------+----------+-----------------------------------------------
+ 1  | aap-ha-db-1 | primary | * running |          | default  | 100      | 1        | postgresql://repmgr:repmgr@aap-ha-db-1/repmgr
+```
+
 ## 4. Deploy `HAProxy` nodes
 
 At each `HAProxy` server, the configuration file `/etc/haproxy/haproxy.cfg` is fullfilled with the following contents:
