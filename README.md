@@ -135,6 +135,9 @@ service_reload_command = 'sudo systemctl reload postgresql'
 repmgrd_service_start_command = 'sudo systemctl start repmgr-13'
 repmgrd_service_stop_command = 'sudo systemctl stop repmgr-13'
 EOF
+
+touch /var/log/repmgr.log
+chown postgres: /var/log/repmgr.log
 ```
 
 Create the database superuser `repmgr` and the database `repmgr`:
@@ -159,6 +162,10 @@ Let the newly created user to connect from any database server. **Run the follow
 su - postgres
 
 cat >> data/pg_hba.conf <<EOF
+local   replication      repmgr                             trust
+host    replication      repmgr        127.0.0.1/32         trust
+host    replication      repmgr        192.168.122.47/32    trust
+host    replication      repmgr        192.168.122.88/32    trust
 local   repmgr           repmgr                             trust
 host    repmgr           repmgr        127.0.0.1/32         trust
 host    repmgr           repmgr        192.168.122.47/32    trust
@@ -168,6 +175,12 @@ EOF
 logout
 
 systemctl restart postgresql
+```
+
+Enable and start the `repmgr-13` service to control the replicas:
+
+```console
+systemctl enable --now repmgr-13
 ```
 
 > [!tip]
@@ -205,6 +218,74 @@ $ repmgr -f /etc/repmgr/13/repmgr.conf cluster show
  ID | Name        | Role    | Status    | Upstream | Location | Priority | Timeline | Connection string                            
 ----+-------------+---------+-----------+----------+----------+----------+----------+-----------------------------------------------
  1  | aap-ha-db-1 | primary | * running |          | default  | 100      | 1        | postgresql://repmgr:repmgr@aap-ha-db-1/repmgr
+```
+
+Clone the primary database to the secondary node (repeat these steps if more than one replica is to be added). **Run the following steps at the secondary database servers**:
+
+```console
+su - postgres
+
+rm -rf data/*
+
+repmgr -f /etc/repmgr/13/repmgr.conf -d 'postgresql://repmgr:repmgr@aap-ha-db-1.bcnconsulting.com/repmgr' standby clone
+
+sudo systemctl start postgresql
+
+logout
+```
+
+Register the secondary database to `repmgr`:
+
+```console
+su - postgres
+
+repmgr -f /etc/repmgr/13/repmgr.conf standby register
+
+logout
+```
+
+It should be registered successfully. It can be checked with the following command:
+
+```console
+$ repmgr -f /etc/repmgr/13/repmgr.conf cluster show
+ ID | Name        | Role    | Status    | Upstream    | Location | Priority | Timeline | Connection string                            
+----+-------------+---------+-----------+-------------+----------+----------+----------+-----------------------------------------------
+ 1  | aap-ha-db-1 | primary | * running |             | default  | 100      | 1        | postgresql://repmgr:repmgr@aap-ha-db-1/repmgr
+ 2  | aap-ha-db-2 | standby |   running | aap-ha-db-1 | default  | 100      | 1        | postgresql://repmgr:repmgr@aap-ha-db-2/repmgr
+```
+
+Lets test the failover functionality. Stop the primary server (run the following commands at the primary database server):
+
+```console
+$ su - postgres
+
+$ sudo systemctl stop postgresql
+
+$ repmgr -f /etc/repmgr/13/repmgr.conf cluster show
+ ID | Name        | Role    | Status        | Upstream      | Location | Priority | Timeline | Connection string                            
+----+-------------+---------+---------------+---------------+----------+----------+----------+-----------------------------------------------
+ 1  | aap-ha-db-1 | primary | ? unreachable | ?             | default  | 100      |          | postgresql://repmgr:repmgr@aap-ha-db-1/repmgr
+ 2  | aap-ha-db-2 | standby |   running     | ? aap-ha-db-1 | default  | 100      | 1        | postgresql://repmgr:repmgr@aap-ha-db-2/repmgr
+
+WARNING: following issues were detected
+  - unable to connect to node "aap-ha-db-1" (ID: 1)
+  - node "aap-ha-db-1" (ID: 1) is registered as an active primary but is unreachable
+  - unable to connect to node "aap-ha-db-2" (ID: 2)'s upstream node "aap-ha-db-1" (ID: 1)
+  - unable to determine if node "aap-ha-db-2" (ID: 2) is attached to its upstream node "aap-ha-db-1" (ID: 1)
+
+HINT: execute with --verbose option to see connection error messages
+
+$ logout
+```
+
+And look at the cluster status after 50s:
+
+```console
+$ su - postgres
+
+
+
+$ logout
 ```
 
 ## 4. Deploy `HAProxy` nodes
