@@ -64,7 +64,7 @@ The user `postgres` must have the SSH configured to connect to every database no
 
 ```console
 su - postgres
-ssh-keygen -b 2048 -t rsa -q -N ""
+ssh-keygen -b 2048 -t rsa -q -N "" -f .ssh/id_rsa
 ```
 
 The easiest way to copy the keys is to execute the following steps between all the database servers with each other:
