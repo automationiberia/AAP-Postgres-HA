@@ -206,9 +206,15 @@ visudo -c
 Register the primary server:
 
 ```console
-su - postgres
+$ su - postgres
 
-repmgr -f /etc/repmgr/13/repmgr.conf primary register
+$ repmgr -f /etc/repmgr/13/repmgr.conf primary register
+INFO: connecting to primary database...
+NOTICE: attempting to install extension "repmgr"
+NOTICE: "repmgr" extension successfully installed
+NOTICE: primary node record (ID: 1) registered
+
+$ logout
 ```
 
 It should be registered successfully. It can be checked with the following command:
@@ -223,25 +229,49 @@ $ repmgr -f /etc/repmgr/13/repmgr.conf cluster show
 Clone the primary database to the secondary node (repeat these steps if more than one replica is to be added). **Run the following steps at the secondary database servers**:
 
 ```console
-su - postgres
+$ su - postgres
 
-rm -rf data/*
+$ rm -rf data/*
 
-repmgr -f /etc/repmgr/13/repmgr.conf -d 'postgresql://repmgr:repmgr@aap-ha-db-1.bcnconsulting.com/repmgr' standby clone
+$ repmgr -f /etc/repmgr/13/repmgr.conf -d 'postgresql://repmgr:repmgr@aap-ha-db-1.bcnconsulting.com/repmgr' standby clone
+NOTICE: destination directory "/var/lib/pgsql/data" provided
+INFO: connecting to source node
+DETAIL: connection string is: user=repmgr password=repmgr dbname=repmgr host=aap-ha-db-1.bcnconsulting.com
+DETAIL: current installation size is 69 MB
+INFO: replication slot usage not requested;  no replication slot will be set up for this standby
+NOTICE: checking for available walsenders on the source node (2 required)
+NOTICE: checking replication connections can be made to the source server (2 required)
+WARNING: data checksums are not enabled and "wal_log_hints" is "off"
+DETAIL: pg_rewind requires "wal_log_hints" to be enabled
+INFO: checking and correcting permissions on existing directory "/var/lib/pgsql/data"
+NOTICE: starting backup (using pg_basebackup)...
+HINT: this may take some time; consider using the -c/--fast-checkpoint option
+INFO: executing:
+  /usr/bin/pg_basebackup -l "repmgr base backup"  -D /var/lib/pgsql/data -d 'user=repmgr password=repmgr dbname=repmgr host=aap-ha-db-1.bcnconsulting.com' -X stream 
+NOTICE: standby clone (using pg_basebackup) complete
+NOTICE: you can now start your PostgreSQL server
+HINT: for example: sudo systemctl start postgresql
+HINT: after starting the server, you need to register this standby with "repmgr standby register"
 
-sudo systemctl start postgresql
 
-logout
+$ sudo systemctl start postgresql
+
+$ logout
 ```
 
 Register the secondary database to `repmgr`:
 
 ```console
-su - postgres
+$ su - postgres
 
-repmgr -f /etc/repmgr/13/repmgr.conf standby register
+$ repmgr -f /etc/repmgr/13/repmgr.conf standby register
+INFO: connecting to local node "aap-ha-db-2" (ID: 2)
+INFO: connecting to primary database
+WARNING: --upstream-node-id not supplied, assuming upstream node is primary (node ID: 1)
+INFO: standby registration complete
+NOTICE: standby node "aap-ha-db-2" (ID: 2) successfully registered
 
-logout
+$ logout
 ```
 
 It should be registered successfully. It can be checked with the following command:
