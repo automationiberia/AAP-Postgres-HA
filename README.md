@@ -137,6 +137,59 @@ repmgrd_service_stop_command = 'sudo systemctl stop repmgr-13'
 EOF
 ```
 
+Create the database superuser `repmgr` and the database `repmgr`:
+
+```console
+su - postgres
+
+psql <<EOF
+CREATE USER repmgr WITH PASSWORD 'repmgr';
+CREATE DATABASE repmgr WITH OWNER repmgr;
+ALTER USER repmgr SUPERUSER;
+ALTER USER repmgr REPLICATION;
+ALTER USER repmgr BYPASSRLS;
+EOF
+
+logout
+```
+
+Let the newly created user to connect from any database server. **Run the following commands at all the database servers servers as `root` user**:
+
+```console
+su - postgres
+
+cat >> data/pg_hba.conf <<EOF
+local   repmgr           repmgr                             trust
+host    repmgr           repmgr        127.0.0.1/32         trust
+host    repmgr           repmgr        xxx.xxx.xxx.xxx/32   trust
+host    repmgr           repmgr        xxx.xxx.xxx.xxx/32   trust
+EOF
+
+logout
+
+systemctl restart postgresql
+```
+
+> [!tip]
+> Replace the `xxx.xxx.xxx.xxx` IP address in the previous command for the IPs of the database servers. Add more lines if more replicas are to be configured.
+
+The `postgres` user must have permissions to run some commands using sudo and without any password, for the switchover operations to work as expected. **Run the following commands at all of the database servers**:
+
+```console
+cat > /etc/sudoers.d/95-postgres <<EOF
+postgres ALL=(root) NOPASSWD: /usr/bin/systemctl start postgresql, \
+                              /usr/bin/systemctl stop postgresql, \
+                              /usr/bin/systemctl restart postgresql, \
+                              /usr/bin/systemctl reload postgresql, \
+                              /usr/bin/systemctl start repmgr-13, \
+                              /usr/bin/systemctl stop repmgr-13
+EOF
+
+chmod 0440 /etc/sudoers.d/95-postgres
+
+visudo -c
+```
+
 ## 4. Deploy `HAProxy` nodes
 
 At each `HAProxy` server, the configuration file `/etc/haproxy/haproxy.cfg` is fullfilled with the following contents:
