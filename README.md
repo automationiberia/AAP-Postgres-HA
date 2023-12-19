@@ -82,6 +82,26 @@ The easiest way to copy the keys is to execute the following steps between all t
 > touch ~/.ssh/authorized_keys && chown ${USER}: ~/.ssh/authorized_keys && chmod 0600 ~/.ssh/authorized_keys
 > ```
 
+Let's configure the database to be able to run the `repmgr` plugin. Run the following commands at the database server installed by the AAP installer (this will be the initial `primary` database replica):
+
+```console
+su - postgres
+
+sed -i "s,^#include_dir = 'conf.d',include_dir = 'conf.d'," data/postgresql.conf
+
+mkdir data/conf.d
+
+cat > data/conf.d/repmgr.conf <<EOF
+shared_preload_libraries = 'repmgr'
+max_wal_senders = 10
+max_replication_slots = 10
+wal_level = 'logical'
+hot_standby = on
+archive_mode = on
+archive_command = '/bin/true'
+EOF
+```
+
 ## 4. Deploy `HAProxy` nodes
 
 At each `HAProxy` server, the configuration file `/etc/haproxy/haproxy.cfg` is fullfilled with the following contents:
