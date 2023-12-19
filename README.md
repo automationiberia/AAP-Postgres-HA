@@ -11,7 +11,7 @@ The easiest way to deploy these extra DB nodes, if VMware or equivalent is used,
 If cloning is not the selected method, the following considerations must be taken:
 
 * AAP 2.4 requires all the implied nodes to be RHEL 8.5+.
-* The default version for PostgreSQL in RHEL 8 is 10.23, but 12+ is required by AAP. The recommendation is to install the same version that is deployed byt the AAP installer, so the following steps must be executed before installing PostgreSQL:
+* The default version for PostgreSQL in RHEL 8 is 10.23, but 12+ is required by AAP. The recommendation is to install the same version that is deployed by the AAP installer, so the following steps must be executed before installing PostgreSQL:
 
   ```console
   dnf module switch-to postgresql:13
