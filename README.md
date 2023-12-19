@@ -259,7 +259,7 @@ $ sudo systemctl start postgresql
 $ logout
 ```
 
-Register the secondary database to `repmgr`:
+Register the secondary database to `repmgr`. **Run the following commands at the secondary database servers**:
 
 ```console
 $ su - postgres
