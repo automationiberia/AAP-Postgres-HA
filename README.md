@@ -104,9 +104,11 @@ hot_standby = on
 archive_mode = on
 archive_command = '/bin/true'
 EOF
+
+logout
 ```
 
-Now, let's configure the `repmgr` tool at all of the database servers that will be replicas for the database installed by the AAP installer. **Run the following commands at all of the database servers**:
+Now, let's configure the `repmgr` tool at all of the database servers that will be replicas for the database installed by the AAP installer. **Run the following commands at all of the database servers, as `root` user**:
 
 ```console
 cp /etc/repmgr/13/repmgr.conf{,.orig}
