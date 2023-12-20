@@ -474,8 +474,8 @@ After modifying the configuration file, the service must be restarted and the fi
 
 ```console
 systemctl restart haproxy
-firewall-cmd --add-port 1936/tcp --add-port 5433/tcp
 firewall-cmd --add-port 1936/tcp --add-port 5433/tcp --permanent
+firewall-cmd --reload
 ```
 
 > [!TIP]
@@ -489,16 +489,25 @@ The HAProxy service can be checked by accessing to its stats webpage at <http://
 
 ### 4.1 `HAProxy` with `Keepalived`
 
+Install the `keepalived` package at every HAProxy server. Run the following commands as `root` user:
+
+```console
+dnf install -y keepalived
+```
+
 > [!TIP]:
 > To let `Keepalived` to use Direct Routing, the following command should be executed to every `HAProxy` server to configure the firewall accordingly:
 >
 > ```console
 > firewall-cmd --add-rich-rule='rule protocol value="vrrp" accept' --permanent
+> firewall-cmd --reload
 > ```
 
-`Keepalived` at primary `HAProxy` server:
+Configure `Keepalived` at primary `HAProxy` server:
 
-```cfg file
+```console
+cp /etc/keepalived/keepalived.conf{,.orig}
+cat > /etc/keepalived/keepalived.conf <<EOF
 global_defs {
 }
 
@@ -539,6 +548,7 @@ virtual_server 192.168.122.100 5433 {
         }
     }
 }
+EOF
 ```
 
 > [!tip]
@@ -592,11 +602,19 @@ virtual_server 192.168.122.100 5433 {
 > [!TIP]
 > Replace the IP addresses in the previous command for the IPs of the database servers. Add more lines if more replicas are to be configured.
 >
+> Replace the network interface name if needed as well.
+>
 > If Selinux is enabled, it should be configured to allow `Keepalived` to bind to any needed port
 >
 > ```console
 > setsebool -P keepalived_connect_any=1
 > ```
+
+Enable and start the `keepalived` service:
+
+```console
+systemctl enable --now keepalived
+```
 
 ## 5. Configure AAP to use the `Keepalived` endpoint
 
