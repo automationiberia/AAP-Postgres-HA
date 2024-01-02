@@ -1,5 +1,8 @@
 # AAP-Postgres-HA
 
+> [!CAUTION]
+> Take a look at <https://access.redhat.com/articles/4010491> to learn about the supportability of this solution.
+
 ## 1. Install AAP normally
 
 Install AAP following any of the official installation paths. They are all available at the section `Installation and Upgrade` in <https://access.redhat.com/documentation/en-us/red_hat_ansible_automation_platform/2.4>
