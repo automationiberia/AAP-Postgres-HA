@@ -1,7 +1,7 @@
 # AAP-Postgres-HA
 
 > [!CAUTION]
-> Take a look at <https://access.redhat.com/articles/4010491> to learn about the supportability of this solution.
+> Take a look at <https://access.redhat.com/articles/4010491> and <https://access.redhat.com/solutions/3682951> to learn about the supportability of this solution.
 
 ## 1. Install AAP normally
 
